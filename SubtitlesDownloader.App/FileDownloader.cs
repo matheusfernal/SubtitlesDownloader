@@ -19,8 +19,9 @@ class FileDownloader
 
   private string RenameSubtilteFile(string videoFileName, string subtilteFileName)
   {
-    var videoFileNameWithoutExtension = videoFileName.Split('.')[0];
-    var subtitleFileExtension = subtilteFileName.Split('.')[1];
+    var videoFileNameExtension = videoFileName.Split('.').Last();
+    var videoFileNameWithoutExtension = videoFileName.Replace($".{videoFileNameExtension}", "");
+    var subtitleFileExtension = subtilteFileName.Split('.').Last();
 
     return $"{videoFileName}.{subtitleFileExtension}"; 
   }
