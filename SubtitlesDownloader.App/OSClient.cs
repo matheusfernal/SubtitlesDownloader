@@ -5,82 +5,63 @@ using System.Text.Json;
 using System.Web;
 using JsonStringCaseConverter;
 using SubtitlesDownloader.App.Model;
-using HttpClientToCurl;
+using RestSharp;
+using RestSharp.Serializers.Json;
 
 namespace SubtitlesDownloader.App;
 
 class OSClient : IDisposable
 {
-  private HttpClient HttpClient { get; }
-  private JsonSerializerOptions JsonOptions { get; }
+  private readonly RestClient _client;
 
   public OSClient(string apiKey)
   {
-    HttpClient = new HttpClient();
-    HttpClient.BaseAddress = new Uri("https://api.opensubtitles.com");
-    HttpClient.DefaultRequestHeaders.Add("Api-Key", apiKey);
-
-    JsonOptions = new JsonSerializerOptions
-    {
-      PropertyNamingPolicy = new JsonStringCaseNamingPolicy(StringCases.SnakeCase)
-    };
+    var options = new RestClientOptions("https://api.opensubtitles.com");
+    _client = new RestClient(options,
+      configureSerialization: s => s.UseSystemTextJson(new JsonSerializerOptions
+      {
+        PropertyNamingPolicy = new JsonStringCaseNamingPolicy(StringCases.SnakeCase)
+      })
+    );
+    _client.AddDefaultHeader("Api-Key", apiKey);
   }
 
   public void Dispose()
   {
-    HttpClient.Dispose();
+    _client?.Dispose();
+    GC.SuppressFinalize(this);
   }
 
   public async Task<LoginResponse?> LoginAsync(string username, string password)
   {
     var loginContent = new { username, password };
-    var loginResponse = await HttpClient.PostAsJsonAsync("api/v1/login", loginContent, JsonOptions);
 
-    if (loginResponse.IsSuccessStatusCode)
-    {
-      var loginResponseObj = await loginResponse.Content.ReadFromJsonAsync<LoginResponse>(JsonOptions);
-      return loginResponseObj;
-    }
-
-    return null;
+    var loginResponse = await _client.PostJsonAsync<object, LoginResponse>("api/v1/login", loginContent);
+    return loginResponse;
   }
 
   public async Task<SearchResponse?> SearchSubtitlesAsync(string movieHash, string fileName)
   {
-    var query = HttpUtility.ParseQueryString(string.Empty);
-    query["languages"] = "pt-BR";
-    query["moviehash"] = movieHash;
-    query["query"] = fileName;
-
-    var response = await HttpClient.GetAsync($"api/v1/subtitles?{query.ToString()}");
-    if (response.IsSuccessStatusCode)
+    var args = new
     {
-      var responseObj = await response.Content.ReadFromJsonAsync<SearchResponse>(JsonOptions);
-      return responseObj;
-    }
+      languages = "pt-Br",
+      movieHash,
+      query = fileName
+    };
 
-    return null;
+    var searchResponse = await _client.GetJsonAsync<SearchResponse>("api/v1/subtitles", args);
+    return searchResponse;
   }
 
   public async Task<DownloadResponse?> DownloadAsync(int fileId, string token)
   {
-    // TODO: Pass the login token when not dev
-    // var downloadContent = new { fileId };
-    // var downloadResponse = await HttpClient.PostAsJsonAsync("api/v1/download", downloadContent, JsonOptions);
-    
-    var request = new HttpRequestMessage(HttpMethod.Post, "api/v1/download");
-    request.Headers.Add("Authorization", $"Bearer {token}");
-    request.Content = new StringContent("{\n \"file_id\": " + fileId + "\n}", null, "application/json");
-    var downloadResponse = await HttpClient.SendAsync(request);
+    var downloadContent = new { fileId };
 
-    HttpClient.GenerateCurlInConsole(request);
+    var request = new RestRequest("api/v1/download");
+    request.AddHeader("Authorization", $"Bearer {token}");
+    request.AddJsonBody(downloadContent);
 
-    if (downloadResponse.IsSuccessStatusCode)
-    {
-      var downloadResponseObj = await downloadResponse.Content.ReadFromJsonAsync<DownloadResponse>(JsonOptions);
-      return downloadResponseObj;
-    }
-
-    return null;
+    var downloadResponse = await _client.PostAsync<DownloadResponse>(request);
+    return downloadResponse;
   }
 }

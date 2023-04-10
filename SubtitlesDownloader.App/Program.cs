@@ -41,8 +41,9 @@ namespace SubtitlesDownloader.App
             Console.WriteLine($"Downloading first subtitle from moviehash: {firstFile.FileName}"); //TODO: Consider others
             var downloadResponse = await osClient.DownloadAsync(firstFile.FileId, login.Token);
             Console.WriteLine("Do you want to rename the subtitle (same name of video file)? (y/n)");
+            Console.Write(">> ");
             var choice = Console.ReadLine();
-            fileDownloader.DownloadFileAndSaveFileAsync(downloadResponse, filePath, choice.ToLower() == "s");
+            fileDownloader.DownloadFileAndSaveFileAsync(downloadResponse, filePath, choice.ToLower() == "y");
             Console.WriteLine("Subtitle file saved");
           }
           else
@@ -64,8 +65,9 @@ namespace SubtitlesDownloader.App
             Console.WriteLine($"{file.FileName} will be downloaded");
             var downloadResponse = await osClient.DownloadAsync(file.FileId, login.Token);
             Console.WriteLine("Do you want to rename the subtitle (same name of video file)? (y/n)");
+            Console.Write(">> ");
             choice = Console.ReadLine();
-            fileDownloader.DownloadFileAndSaveFileAsync(downloadResponse, filePath, choice.ToLower() == "s");
+            fileDownloader.DownloadFileAndSaveFileAsync(downloadResponse, filePath, choice.ToLower() == "y");
             Console.WriteLine("Subtitle file saved");
           }
         }
