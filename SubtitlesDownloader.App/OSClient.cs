@@ -1,8 +1,4 @@
-using System.Buffers.Text;
-using System;
-using System.Net.Http.Json;
 using System.Text.Json;
-using System.Web;
 using JsonStringCaseConverter;
 using SubtitlesDownloader.App.Model;
 using RestSharp;

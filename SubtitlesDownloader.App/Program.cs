@@ -1,26 +1,27 @@
-﻿using System.Web;
-using System.Net.Http.Json;
-using System.Text.Json;
-using JsonStringCaseConverter;
-using SubtitlesDownloader.App.Model;
+﻿using Microsoft.Extensions.Configuration;
 
 namespace SubtitlesDownloader.App
 {
   class Program
   {
-    private const string ApiKey = "";
-    private const string Username = "";
-    private const string Password = "";
-
     static async Task Main(string[] args)
     {
+      var builder = new ConfigurationBuilder()
+        .AddJsonFile("appsettings.json", true, true);
+      var config = builder.Build();
+
+      var apiKey = config["OpenSubtitles:ApiKey"];
+      var username = config["OpenSubtitles:UserName"];
+      var password = config["OpenSubtitles:Password"];
+
+      var console = new ConsoleInteractor();
+
       Console.WriteLine("Paste the path of a directory to scan: ");
-      Console.Write(">> ");
-      var path = Console.ReadLine();
+      var path = console.AskInput();
       var files = new DirectoryReader().ReadFiles(path);
 
-      using var osClient = new OSClient(ApiKey);
-      var login = await osClient.LoginAsync(Username, Password);
+      using var osClient = new OSClient(apiKey);
+      var login = await osClient.LoginAsync(username, password);
 
       foreach (var filePath in files)
       {
@@ -28,9 +29,10 @@ namespace SubtitlesDownloader.App
         var fileName = Path.GetFileName(filePath);
         var searchResponse = await osClient.SearchSubtitlesAsync(movieHash, fileName);
 
-        Console.WriteLine($"File: {fileName}");
+        Console.WriteLine();
+        console.WriteLineWithFileName("File: ", fileName, "");
 
-        if (searchResponse.TotalCount > 0) 
+        if (searchResponse.TotalCount > 0)
         {
           var fileDownloader = new FileDownloader();
           if (searchResponse.Data.Where(d => d.Attributes.MoviehashMatch).Any())
@@ -41,37 +43,38 @@ namespace SubtitlesDownloader.App
             Console.WriteLine($"Downloading first subtitle from moviehash: {firstFile.FileName}"); //TODO: Consider others
             var downloadResponse = await osClient.DownloadAsync(firstFile.FileId, login.Token);
             Console.WriteLine("Do you want to rename the subtitle (same name of video file)? (y/n)");
-            Console.Write(">> ");
-            var choice = Console.ReadLine();
+            var choice = console.AskInput();
             fileDownloader.DownloadFileAndSaveFileAsync(downloadResponse, filePath, choice.ToLower() == "y");
             Console.WriteLine("Subtitle file saved");
           }
           else
           {
             Console.WriteLine("Multiple subtitles found");
+            Console.WriteLine();
             var option = 1;
             foreach (var subtitleAttributes in searchResponse.Data.Select(d => d.Attributes))
             {
-              Console.WriteLine($"{option++}: {subtitleAttributes.Release}");
+              console.WriteLineWithSubtitleName($"{option++}: ", subtitleAttributes.Release, "");
               Console.WriteLine(subtitleAttributes.Comments);
-              Console.WriteLine("---");
+              Console.WriteLine();
             }
             Console.WriteLine("Chose one typing the number");
-            Console.Write(">> ");
-            var choice = Console.ReadLine();
+            var choice = console.AskInput();
             var index = int.Parse(choice) - 1;
-            
+
             var file = searchResponse.Data[index].Attributes.Files.First(); //TODO: Consider others
-            Console.WriteLine($"{file.FileName} will be downloaded");
+            Console.WriteLine();
+            console.WriteLineWithSubtitleFile("", file.FileName, " will be downloaded");
             var downloadResponse = await osClient.DownloadAsync(file.FileId, login.Token);
             Console.WriteLine("Do you want to rename the subtitle (same name of video file)? (y/n)");
-            Console.Write(">> ");
-            choice = Console.ReadLine();
+            choice = console.AskInput();
+            Console.WriteLine();
             fileDownloader.DownloadFileAndSaveFileAsync(downloadResponse, filePath, choice.ToLower() == "y");
             Console.WriteLine("Subtitle file saved");
           }
         }
-        Console.WriteLine("===");
+        Console.WriteLine();
+        Console.WriteLine("-------------------");
       }
     }
   }

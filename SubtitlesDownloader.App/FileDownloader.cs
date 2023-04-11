@@ -1,4 +1,3 @@
-using System;
 using System.Net;
 using SubtitlesDownloader.App.Model;
 
@@ -23,6 +22,6 @@ class FileDownloader
     var videoFileNameWithoutExtension = videoFileName.Replace($".{videoFileNameExtension}", "");
     var subtitleFileExtension = subtilteFileName.Split('.').Last();
 
-    return $"{videoFileName}.{subtitleFileExtension}"; 
+    return $"{videoFileNameWithoutExtension}.{subtitleFileExtension}"; 
   }
 }
