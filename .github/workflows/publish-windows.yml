@@ -23,18 +23,18 @@ jobs:
       - name: Build
         run: |
           cd SubtitlesDownloader.App
-          dotnet build --configuration Release --no-retore
-          dotnet publish --output "/Users/matheus.fernal/SubtitlesDownloader" --runtime win-x64 --configuration Release -p:PublishSingleFile=true -p:PublishTrimmed=true --self-contained true
-
+          dotnet build --no-retore --configuration Release
+          dotnet publish --output "../windows-release" --runtime win-x64 --configuration Release -p:PublishSingleFile=true -p:PublishTrimmed=true --self-contained true
+      
       - name: Archive Release
         uses: thedoctor0/zip-release@0.7.1
         with:
           type: 'zip'
-          filename: 'release.zip'
-          directory: SubtitlesDownloader.App/bin/Release/net6.0/win-x64/publish
+          filename: 'windows-release.zip'
+          directory: windows-release
       
       - name: Publish Artifact
         uses: actions/upload-artifact@v2
         with:
-          name: release.zip
-          path: SubtitlesDownloader.App/bin/Release/net6.0/win-x64/publish/release.zip
+          name: windows-release.zip
+          path: windows-release.zip
