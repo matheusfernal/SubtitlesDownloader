@@ -1,0 +1,40 @@
+name: Publish Windows
+
+on:
+  workflow_dispatch:
+
+env:
+  DOTNET_VERSION: '6.0.401' # The .NET SDK version to use
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup .NET Core
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Install dependencies
+        run: dotnet restore
+
+      - name: Build
+        run: |
+          cd SubtitlesDownloader.App
+          dotnet build --configuration Release --no-retore
+          dotnet publish --output "/Users/matheus.fernal/SubtitlesDownloader" --runtime win-x64 --configuration Release -p:PublishSingleFile=true -p:PublishTrimmed=true --self-contained true
+
+      - name: Archive Release
+        uses: thedoctor0/zip-release@0.7.1
+        with:
+          type: 'zip'
+          filename: 'release.zip'
+          directory: SubtitlesDownloader.App/bin/Release/net6.0/win-x64/publish
+      
+      - name: Publish Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: release.zip
+          path: SubtitlesDownloader.App/bin/Release/net6.0/win-x64/publish/release.zip
