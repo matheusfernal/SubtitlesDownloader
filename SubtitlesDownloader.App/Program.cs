@@ -58,19 +58,31 @@ namespace SubtitlesDownloader.App
               Console.WriteLine(subtitleAttributes.Comments);
               Console.WriteLine();
             }
-            Console.WriteLine("Chose one typing the number");
+            Console.WriteLine("Chose one typing the number (s to skip, a to all)");
             var choice = console.AskInput();
-            var index = int.Parse(choice) - 1;
-
-            var file = searchResponse.Data[index].Attributes.Files.First(); //TODO: Consider others
-            Console.WriteLine();
-            console.WriteLineWithSubtitleFile("", file.FileName, " will be downloaded");
-            var downloadResponse = await osClient.DownloadAsync(file.FileId, login.Token);
-            Console.WriteLine("Do you want to rename the subtitle (same name of video file)? (y/n)");
-            choice = console.AskInput();
-            Console.WriteLine();
-            fileDownloader.DownloadFileAndSaveFileAsync(downloadResponse, filePath, choice.ToLower() == "y");
-            Console.WriteLine("Subtitle file saved");
+            
+            if (int.TryParse(choice, out var index) && --index >= 0 && index < searchResponse.Data.Count)
+            {
+              var singleFile = searchResponse.Data[index].Attributes.Files.First(); //TODO: Consider others
+              Console.WriteLine();
+              console.WriteLineWithSubtitleFile("", singleFile.FileName, " will be downloaded");
+              var singleDownloadResponse = await osClient.DownloadAsync(singleFile.FileId, login.Token);
+              Console.WriteLine("Do you want to rename the subtitle (same name of video file)? (y/n)");
+              choice = console.AskInput();
+              Console.WriteLine();
+              fileDownloader.DownloadFileAndSaveFileAsync(singleDownloadResponse, filePath, choice.ToLower() == "y");
+              Console.WriteLine("Subtitle file saved");
+            }
+            else if (choice == "a")
+            {
+              foreach (var file in searchResponse.Data.Select(a => a.Attributes.Files.First()))
+              {
+                console.WriteLineWithSubtitleFile("", file.FileName, " will be downloaded");
+                var downloadResponse = await osClient.DownloadAsync(file.FileId, login.Token);
+                fileDownloader.DownloadFileAndSaveFileAsync(downloadResponse, filePath);
+                Console.WriteLine("Subtitle file saved");
+              }
+            }
           }
         }
         Console.WriteLine();
