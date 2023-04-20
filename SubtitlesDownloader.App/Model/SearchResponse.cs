@@ -41,8 +41,8 @@ class FeatureDetails
   public int Year { get; set; }
   public string Title { get; set; }
   public string MovieName { get; set; }
-  public int ImdbId { get; set; }
-  public int TmdbId { get; set; }
+  public int? ImdbId { get; set; }
+  public int? TmdbId { get; set; }
   public int SeasonNumber { get; set; }
   public int EpisodeNumber { get; set; }
   public int ParentImdbId { get; set; }
